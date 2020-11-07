@@ -2,8 +2,7 @@ sudo docker stop lab_monitor
 sudo docker rm lab_monitor
 sudo docker run -it \
 	--name lab_monitor \
-	-p 80:80 \
+	-p 6080:6080 \
 	--privileged \
-	-e LOG_LEVEL="debug" \
-	-v /home/bitmain/lab_monitor/app:/app \
-	lab_monitor /start-reload.sh
+	-v /home/bitmain/lab_monitor:/mnt/lab_monitor \
+	continuumio/anaconda3

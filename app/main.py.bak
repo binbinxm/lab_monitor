@@ -1,0 +1,63 @@
+import serial
+import binascii
+
+from fastapi import FastAPI
+
+
+
+COMMAND_HEADER = 'fefefefe'
+COMMAND_POWER = '33333635'
+
+def encode_dlt645(addr, ctrl, data):
+    addr = addr[10:12] + addr[8:10] + addr[6:8] + addr[4:6] + addr[2:4] + addr[0:2]
+    data = bytearray.fromhex(data)
+    command = bytearray.fromhex('68') + bytearray.fromhex(addr) + bytearray.fromhex('68') + bytearray.fromhex(ctrl) + bytearray.fromhex(str('%02d'%len(data))) + data
+    
+    # caculate cs
+    cs = 0
+    for i in range(0,len(command)):
+        cs += command[i]
+    cs = cs % 256
+    
+    # add header
+    command = bytearray.fromhex(COMMAND_HEADER) + command
+
+    # add cs
+    command += bytearray([cs])
+
+    # add tail
+    command += bytearray.fromhex('16')
+
+    return bytes(command)
+
+
+def decode_dlt645(data):
+    print(data)
+    print(binascii.b2a_hex(data))
+    val = binascii.b2a_hex(data)[-18:-4]
+    print(val)
+    vol = '%02x'%(int('0x' + val[-2:].decode('ascii'), 16)-0x33) + '%02x'%(int('0x' + val[-4:-2].decode('ascii'), 16)-0x33) + '%02x'%(int('0x' + val[-6:-4].decode('ascii'), 16)-0x33)
+    vol = vol[0:5] + '.' + vol[-1] + 'W'
+    return vol
+
+def get_power_dlt645(addr):
+
+    cmd_power = encode_dlt645(addr, '11', COMMAND_POWER)
+    print(cmd_power)
+
+    ser = serial.Serial("/dev/ttyUSB0",2400,parity=serial.PARITY_EVEN,timeout=0.3)  
+    print('serial port open?', ser.isOpen())
+
+    ser.write((cmd_power))
+    data = (ser.readline())
+    val = decode_dlt645(data)
+
+    ser.close()
+    return val
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"Hello": get_power_dlt645('200906008376')}
+
