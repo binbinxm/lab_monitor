@@ -5,8 +5,8 @@ sudo docker run -it \
 	-p 80:80 \
 	--privileged \
 	-e LOG_LEVEL="debug" \
-	-e MAX_WORKERS="1" \
 	-v /home/bitmain/lab_monitor/app:/app \
 	lab_monitor
 
+	#-e MAX_WORKERS="1" \
 
